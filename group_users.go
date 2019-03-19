@@ -29,7 +29,7 @@ func (c *Client) FindUsersInGroup(name string) (*Group, error) {
 
 // AddUsersToGroup add users to the group
 func (c *Client) AddUsersToGroup(group string, createRequest *[]string) (*[]string, error) {
-	resp, err := c.PostJSON(fmt.Sprintf("/group/%/users", group), createRequest)
+	resp, err := c.PostJSON(fmt.Sprintf("/group/%s/users", group), createRequest)
 	defer closeResponse(resp)
 
 	if err != nil {

@@ -37,7 +37,7 @@ type ApplicationUpdateRequest ApplicationCreateRequest
 
 // FindApplication find a application
 func (c *Client) FindApplication(name string) (*Application, error) {
-		url := c.urlFor(fmt.Sprintf("/application/%s", name))
+	url := c.urlFor(fmt.Sprintf("/application/%s", name))
 	q := url.Query()
 	q.Set("embed", "(realms)")
 	url.RawQuery = q.Encode()
