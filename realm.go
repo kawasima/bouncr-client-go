@@ -73,7 +73,7 @@ func (c *Client) ListRealms(applicationName string, param *RealmSearchParams) ([
 
 // CreateApplication create an application
 func (c *Client) CreateRealm(applicationName string, createRequest *RealmCreateRequest) (*Realm, error) {
-	resp, err := c.PostJSON(c.urlFor(fmt.Sprintf("/application/%s/relms", applicationName)).String(), createRequest)
+	resp, err := c.PostJSON(fmt.Sprintf("/application/%s/realms", applicationName), createRequest)
 	defer closeResponse(resp)
 
 	if err != nil {
@@ -90,8 +90,8 @@ func (c *Client) CreateRealm(applicationName string, createRequest *RealmCreateR
 }
 
 // UpdateRealm update an realm
-func (c *Client) UpdateRealm(applicationName string, updateRequest *RealmUpdateRequest) (*Realm, error) {
-	resp, err := c.PutJSON(c.urlFor(fmt.Sprintf("/application/%s/relms", applicationName)).String(), updateRequest)
+func (c *Client) UpdateRealm(applicationName string, name string, updateRequest *RealmUpdateRequest) (*Realm, error) {
+	resp, err := c.PutJSON(fmt.Sprintf("/application/%s/realm/%s", applicationName, name), updateRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
@@ -104,4 +104,22 @@ func (c *Client) UpdateRealm(applicationName string, updateRequest *RealmUpdateR
 	}
 
 	return &data, nil
+}
+
+func (c *Client) DeleteRealm(applicationName string, name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/application/%s/realm/%s", applicationName, name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }

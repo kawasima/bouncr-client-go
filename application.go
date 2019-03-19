@@ -37,7 +37,12 @@ type ApplicationUpdateRequest ApplicationCreateRequest
 
 // FindApplication find a application
 func (c *Client) FindApplication(name string) (*Application, error) {
-	req, err := http.NewRequest("GET", c.urlFor(fmt.Sprintf("/application/%s", name)).String(), nil)
+		url := c.urlFor(fmt.Sprintf("/application/%s", name))
+	q := url.Query()
+	q.Set("embed", "(realms)")
+	url.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -112,4 +117,22 @@ func (c *Client) UpdateApplication(name string, updateRequest *ApplicationUpdate
 	}
 
 	return &data, nil
+}
+
+func (c *Client) DeleteApplication(name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/application/%s", name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }

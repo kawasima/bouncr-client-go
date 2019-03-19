@@ -83,7 +83,7 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 	if c.Verbose {
 		dump, err := httputil.DumpRequest(req, true)
 		if err == nil {
-			fmt.Printf("%s", dump)
+			fmt.Printf("%s\n", dump)
 		}
 	}
 	client := &http.Client{}
@@ -94,7 +94,7 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 	if c.Verbose {
 		dump, err := httputil.DumpResponse(resp, true)
 		if err == nil {
-			log.Printf("%s", dump)
+			log.Printf("%s\n", dump)
 		}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

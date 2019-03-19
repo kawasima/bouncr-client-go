@@ -105,3 +105,21 @@ func (c *Client) UpdatePermission(name string, updateRequest *PermissionUpdateRe
 
 	return &data, nil
 }
+
+func (c *Client) DeletePermission(name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/permission/%s", name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}

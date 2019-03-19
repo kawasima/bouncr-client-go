@@ -5,18 +5,19 @@ import (
 )
 
 type IdObject struct {
-	ID int `json:"id"`
+	ID   int    `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
-// AssignmentCreateRequest request for creating an assignment
-type AssignmentCreateRequest struct {
+// AssignmentRequest request for creating an assignment
+type AssignmentRequest struct {
 	Group IdObject `json:"group"`
 	Role  IdObject `json:"role"`
 	Realm IdObject `json:"realm"`
 }
 
 // CreateAssignments create assignments
-func (c *Client) CreateAssignments(createRequest *[]AssignmentCreateRequest) (*[]AssignmentCreateRequest, error) {
+func (c *Client) CreateAssignments(createRequest *[]AssignmentRequest) (*[]AssignmentRequest, error) {
 	resp, err := c.PostJSON("/assignments", createRequest)
 	defer closeResponse(resp)
 
@@ -24,11 +25,22 @@ func (c *Client) CreateAssignments(createRequest *[]AssignmentCreateRequest) (*[
 		return nil, err
 	}
 
-	var data []AssignmentCreateRequest
+	var data []AssignmentRequest
 
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
 	return &data, nil
+}
+
+func (c *Client) DeleteAssignments(deleteRequest *[]AssignmentRequest) error {
+	resp, err := c.requestJSON("DELETE",
+		c.urlFor("/assignments").String(),
+		deleteRequest)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }

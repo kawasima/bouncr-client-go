@@ -8,9 +8,10 @@ import (
 
 // Role role information
 type Role struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          int           `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Permissions *[]Permission `json:"permissions"`
 }
 
 // RoleSearchParams parameters for search roles
@@ -30,7 +31,11 @@ type RoleUpdateRequest RoleCreateRequest
 
 // FindRole find a role
 func (c *Client) FindRole(name string) (*Role, error) {
-	req, err := http.NewRequest("GET", c.urlFor(fmt.Sprintf("/role/%s", name)).String(), nil)
+	url := c.urlFor(fmt.Sprintf("/role/%s", name))
+	q := url.Query()
+	q.Set("embed", "(permissions)")
+	url.RawQuery = q.Encode()
+	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -104,4 +109,22 @@ func (c *Client) UpdateRole(name string, updateRequest *RoleUpdateRequest) (*Rol
 	}
 
 	return &data, nil
+}
+
+func (c *Client) DeleteRole(name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/role/%s", name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }

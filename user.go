@@ -100,3 +100,21 @@ func (c *Client) UpdateUser(account string, updateRequest *UserUpdateRequest) (*
 
 	return &data, nil
 }
+
+func (c *Client) DeleteUser(name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/user/%s", name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -8,9 +8,10 @@ import (
 
 // Group group information
 type Group struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Users       *[]User `json:"users"`
 }
 
 // GroupSearchParams parameters for search groups
@@ -30,7 +31,11 @@ type GroupUpdateRequest GroupCreateRequest
 
 // FindGroup find a group
 func (c *Client) FindGroup(name string) (*Group, error) {
-	req, err := http.NewRequest("GET", c.urlFor(fmt.Sprintf("/group/%s", name)).String(), nil)
+	url := c.urlFor(fmt.Sprintf("/group/%s", name))
+	q := url.Query()
+	q.Set("embed", "(users)")
+	url.RawQuery = q.Encode()
+	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,4 +108,22 @@ func (c *Client) UpdateGroup(name string, updateRequest *GroupUpdateRequest) (*G
 	}
 
 	return &data, nil
+}
+
+func (c *Client) DeleteGroup(name string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		c.urlFor(fmt.Sprintf("/group/%s", name)).String(),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Request(req)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
