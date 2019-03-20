@@ -1,7 +1,6 @@
 package bouncr
 
 import (
-	"log"
 	"encoding/json"
 )
 
@@ -20,7 +19,6 @@ type SignInResponse struct {
 func (c *Client) SignIn(signInRequest *SignInRequest) (*SignInResponse, error) {
 	resp, err := c.PostJSON("/sign_in", signInRequest)
 	defer closeResponse(resp)
-	log.Printf("%s", resp.Body)
 	if err != nil {
 		return nil, err
 	}

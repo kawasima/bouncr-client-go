@@ -8,7 +8,7 @@ import (
 
 // User user information
 type User struct {
-	ID           int                    `json:"id"`
+	ID           int64                    `json:"id"`
 	Account      string                 `json:"account"`
 	UserProfiles map[string]interface{} `json:"user_profiles"`
 }
@@ -36,12 +36,19 @@ func (c *Client) FindUser(account string) (*User, error) {
 		return nil, err
 	}
 
-	var data *User
+	var data *map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
-	return data, err
+	user := &User{
+		ID:           int64((*data)["id"].(float64)),
+		Account:      (*data)["account"].(string),
+	}
+	delete(*data, "id")
+	delete(*data, "account")
+	user.UserProfiles = *data
+	return user, err
 
 }
 

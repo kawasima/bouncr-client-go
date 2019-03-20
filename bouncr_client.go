@@ -83,7 +83,7 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 	if c.Verbose {
 		dump, err := httputil.DumpRequest(req, true)
 		if err == nil {
-			fmt.Printf("%s\n", dump)
+			log.Printf("%s\n", dump)
 		}
 	}
 	client := &http.Client{}
