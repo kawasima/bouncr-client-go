@@ -1,7 +1,6 @@
 package bouncr
 
 import (
-	"log"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -86,7 +85,6 @@ func (c *Client) ListApplications(param *ApplicationSearchParams) ([]*Applicatio
 func (c *Client) CreateApplication(createRequest *ApplicationCreateRequest) (*Application, error) {
 	resp, err := c.PostJSON("/applications", createRequest)
 	defer closeResponse(resp)
-	log.Printf("%s", resp.Body)
 
 	if err != nil {
 		return nil, err

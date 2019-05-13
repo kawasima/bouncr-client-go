@@ -22,7 +22,7 @@ type UserSearchParams struct {
 // UserCreateRequest request for creating an user
 type UserCreateRequest map[string]interface{}
 // UserUpdateRequest request for creating an user
-type UserUpdateRequest UserCreateRequest
+type UserUpdateRequest map[string]interface{}
 
 // FindUser find a user
 func (c *Client) FindUser(account string) (*User, error) {
@@ -93,6 +93,7 @@ func (c *Client) CreateUser(createRequest *UserCreateRequest) (*User, error) {
 
 // UpdateUser update an user
 func (c *Client) UpdateUser(account string, updateRequest *UserUpdateRequest) (*User, error) {
+	delete(*updateRequest, "account");
 	resp, err := c.PutJSON(fmt.Sprintf("/user/%s", account), updateRequest)
 	defer closeResponse(resp)
 	if err != nil {

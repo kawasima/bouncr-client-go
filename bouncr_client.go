@@ -74,7 +74,7 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 			Password: c.Password,
 		})
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		c.Token = signInResponse.Token
 	}
