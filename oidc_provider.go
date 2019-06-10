@@ -8,12 +8,12 @@ import (
 
 // OidcProvider oidcProvider information
 type OidcProvider struct {
-	ID           int      `json:"id"`
-	Name         string   `json:"name"`
-	ClientId     string   `json:"client_id"`
-	ClientSecret string   `json:"client_secret"`
-	Scope        string   `json:"scope"`
-	ResponseType string   `json:"response_type"`
+	ID                      int    `json:"id"`
+	Name                    string `json:"name"`
+	ClientId                string `json:"client_id"`
+	ClientSecret            string `json:"client_secret"`
+	Scope                   string `json:"scope"`
+	ResponseType            string `json:"response_type"`
 	AuthorizationEndpoint   string `json:"authorization_endpoint"`
 	TokenEndpoint           string `json:"token_endpoint"`
 	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method"`
@@ -27,11 +27,11 @@ type OidcProviderSearchParams struct {
 
 // OidcProviderCreateRequest request for creating an oidcProvider
 type OidcProviderCreateRequest struct {
-	Name         string   `json:"name"`
-	ClientId     string   `json:"client_id"`
-	ClientSecret string   `json:"client_secret"`
-	Scope        string   `json:"scope"`
-	ResponseType string   `json:"response_type"`
+	Name                    string `json:"name"`
+	ClientId                string `json:"client_id"`
+	ClientSecret            string `json:"client_secret"`
+	Scope                   string `json:"scope"`
+	ResponseType            string `json:"response_type"`
 	AuthorizationEndpoint   string `json:"authorization_endpoint"`
 	TokenEndpoint           string `json:"token_endpoint"`
 	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method"`

@@ -12,10 +12,8 @@ import (
 func TestListApplications(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/bouncr/api/sign_in" {
-			respJSON, _ := json.Marshal([]map[string]interface{}{
-				{
-					"token": "550e8400-e29b-41d4-a716-446655440000",
-				},
+			respJSON, _ := json.Marshal(map[string]interface{}{
+				"token": "550e8400-e29b-41d4-a716-446655440000",
 			})
 
 			fmt.Fprint(res, string(respJSON))

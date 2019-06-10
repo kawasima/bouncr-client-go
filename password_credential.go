@@ -10,11 +10,14 @@ type PasswordCredential struct {
 	User      User      `json:"user"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
 // PasswordCredentialCreateRequest request for creating an password credential
 type PasswordCredentialCreateRequest struct {
 	Account  string `json:"account"`
 	Password string `json:"password"`
+	Initial  bool   `json:"initial"`
 }
+
 // PasswordCredentialUpdateRequest request for updating an password credential
 type PasswordCredentialUpdateRequest struct {
 	Account     string `json:"account"`

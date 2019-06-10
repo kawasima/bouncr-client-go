@@ -8,7 +8,7 @@ import (
 
 // User user information
 type User struct {
-	ID           int64                    `json:"id"`
+	ID           int64                  `json:"id"`
 	Account      string                 `json:"account"`
 	UserProfiles map[string]interface{} `json:"user_profiles"`
 }
@@ -21,6 +21,7 @@ type UserSearchParams struct {
 
 // UserCreateRequest request for creating an user
 type UserCreateRequest map[string]interface{}
+
 // UserUpdateRequest request for creating an user
 type UserUpdateRequest map[string]interface{}
 
@@ -42,8 +43,8 @@ func (c *Client) FindUser(account string) (*User, error) {
 		return nil, err
 	}
 	user := &User{
-		ID:           int64((*data)["id"].(float64)),
-		Account:      (*data)["account"].(string),
+		ID:      int64((*data)["id"].(float64)),
+		Account: (*data)["account"].(string),
 	}
 	delete(*data, "id")
 	delete(*data, "account")
@@ -93,7 +94,7 @@ func (c *Client) CreateUser(createRequest *UserCreateRequest) (*User, error) {
 
 // UpdateUser update an user
 func (c *Client) UpdateUser(account string, updateRequest *UserUpdateRequest) (*User, error) {
-	delete(*updateRequest, "account");
+	delete(*updateRequest, "account")
 	resp, err := c.PutJSON(fmt.Sprintf("/user/%s", account), updateRequest)
 	defer closeResponse(resp)
 	if err != nil {

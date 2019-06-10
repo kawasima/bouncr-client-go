@@ -1,8 +1,8 @@
 package bouncr
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
 )
 
 type IdObject struct {
@@ -28,7 +28,7 @@ func (c *Client) FindAssignment(findRequest *AssignmentRequest) (*Assignment, er
 	url := c.urlFor("/assignment")
 	q := url.Query()
 	q.Set("group", findRequest.Group.Name)
-	q.Set("role",  findRequest.Role.Name)
+	q.Set("role", findRequest.Role.Name)
 	q.Set("realm", findRequest.Realm.Name)
 	url.RawQuery = q.Encode()
 
