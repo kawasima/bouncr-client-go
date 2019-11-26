@@ -11,12 +11,12 @@ type OidcProvider struct {
 	ID                      int    `json:"id"`
 	Name                    string `json:"name"`
 	ClientId                string `json:"client_id"`
-	ClientSecret            string `json:"client_secret"`
 	Scope                   string `json:"scope"`
 	ResponseType            string `json:"response_type"`
 	AuthorizationEndpoint   string `json:"authorization_endpoint"`
 	TokenEndpoint           string `json:"token_endpoint"`
 	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method"`
+	RedirectUri             string `json:"redirect_uri"`
 }
 
 // OidcProviderSearchParams parameters for search oidcProviders
@@ -35,6 +35,7 @@ type OidcProviderCreateRequest struct {
 	AuthorizationEndpoint   string `json:"authorization_endpoint"`
 	TokenEndpoint           string `json:"token_endpoint"`
 	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method"`
+	RedirectUri             string `json:"redirect_uri"`
 }
 
 // OidcProviderUpdateRequest request for creating an oidcProvider
