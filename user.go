@@ -1,90 +1,108 @@
 package bouncr
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
-// User user information
+// User represents user information.
 type User struct {
-	ID           int64                  `json:"id"`
-	Account      string                 `json:"account"`
-	UserProfiles map[string]interface{} `json:"user_profiles"`
+	ID           int64          `json:"id"`
+	Account      string         `json:"account"`
+	UserProfiles map[string]any `json:"user_profiles"`
 }
 
-// UserSearchParams parameters for search users
+// UserSearchParams contains parameters for searching users.
 type UserSearchParams struct {
-	Offset int
-	Limit  int
+	Query   string
+	Offset  int
+	Limit   int
+	GroupID int
+	Embed   string
 }
 
-// UserCreateRequest request for creating an user
-type UserCreateRequest map[string]interface{}
+// UserCreateRequest is a request for creating a user.
+type UserCreateRequest map[string]any
 
-// UserUpdateRequest request for creating an user
-type UserUpdateRequest map[string]interface{}
+// UserUpdateRequest is a request for updating a user.
+type UserUpdateRequest map[string]any
 
-// FindUser find a user
-func (c *Client) FindUser(account string) (*User, error) {
-	req, err := http.NewRequest("GET", c.urlFor(fmt.Sprintf("/user/%s", account)).String(), nil)
+// FindUser finds a user by account.
+func (c *Client) FindUser(ctx context.Context, account string) (*User, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", c.urlFor(fmt.Sprintf("/user/%s", account)).String(), nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	var data *map[string]interface{}
+	var data map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
 	user := &User{
-		ID:      int64((*data)["id"].(float64)),
-		Account: (*data)["account"].(string),
+		ID:      int64(data["id"].(float64)),
+		Account: data["account"].(string),
 	}
-	delete(*data, "id")
-	delete(*data, "account")
-	user.UserProfiles = *data
-	return user, err
-
+	delete(data, "id")
+	delete(data, "account")
+	user.UserProfiles = data
+	return user, nil
 }
 
-// ListUsers find the users
-func (c *Client) ListUsers(param *UserSearchParams) ([]*User, error) {
-	req, err := http.NewRequest("GET", c.urlFor("/users").String(), nil)
+// ListUsers finds users.
+func (c *Client) ListUsers(ctx context.Context, param *UserSearchParams) ([]*User, error) {
+	u := c.urlFor("/users")
+	if param != nil {
+		setPagination(u, param.Offset, param.Limit)
+		q := u.Query()
+		if param.Query != "" {
+			q.Set("q", param.Query)
+		}
+		if param.GroupID > 0 {
+			q.Set("group_id", strconv.Itoa(param.GroupID))
+		}
+		if param.Embed != "" {
+			q.Set("embed", param.Embed)
+		}
+		u.RawQuery = q.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	var data []*(User)
+	var data []*User
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
-	return data, err
+	return data, nil
 }
 
-// CreateUser create an user
-func (c *Client) CreateUser(createRequest *UserCreateRequest) (*User, error) {
-	resp, err := c.PostJSON("/users", createRequest)
+// CreateUser creates a user.
+func (c *Client) CreateUser(ctx context.Context, createRequest *UserCreateRequest) (*User, error) {
+	resp, err := c.PostJSON(ctx, "/users", createRequest)
 	defer closeResponse(resp)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var data User
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
@@ -92,10 +110,10 @@ func (c *Client) CreateUser(createRequest *UserCreateRequest) (*User, error) {
 	return &data, nil
 }
 
-// UpdateUser update an user
-func (c *Client) UpdateUser(account string, updateRequest *UserUpdateRequest) (*User, error) {
+// UpdateUser updates a user.
+func (c *Client) UpdateUser(ctx context.Context, account string, updateRequest *UserUpdateRequest) (*User, error) {
 	delete(*updateRequest, "account")
-	resp, err := c.PutJSON(fmt.Sprintf("/user/%s", account), updateRequest)
+	resp, err := c.PutJSON(ctx, fmt.Sprintf("/user/%s", account), updateRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
@@ -106,21 +124,17 @@ func (c *Client) UpdateUser(account string, updateRequest *UserUpdateRequest) (*
 	if err != nil {
 		return nil, err
 	}
-
 	return &data, nil
 }
 
-func (c *Client) DeleteUser(name string) error {
-	req, err := http.NewRequest(
-		"DELETE",
-		c.urlFor(fmt.Sprintf("/user/%s", name)).String(),
-		nil,
-	)
+// DeleteUser deletes a user.
+func (c *Client) DeleteUser(ctx context.Context, name string) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", c.urlFor(fmt.Sprintf("/user/%s", name)).String(), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err

@@ -1,12 +1,13 @@
 package bouncr
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-// Role role information
+// Role represents role information.
 type Role struct {
 	ID          int           `json:"id"`
 	Name        string        `json:"name"`
@@ -14,78 +15,38 @@ type Role struct {
 	Permissions *[]Permission `json:"permissions"`
 }
 
-// RoleSearchParams parameters for search roles
+// RoleSearchParams contains parameters for searching roles.
 type RoleSearchParams struct {
 	Offset int
 	Limit  int
 }
 
-// RoleCreateRequest request for creating an role
+// RoleCreateRequest is a request for creating a role.
 type RoleCreateRequest struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 }
 
-// RoleUpdateRequest request for creating an role
+// RoleUpdateRequest is a request for updating a role.
 type RoleUpdateRequest RoleCreateRequest
 
-// FindRole find a role
-func (c *Client) FindRole(name string) (*Role, error) {
-	url := c.urlFor(fmt.Sprintf("/role/%s", name))
-	q := url.Query()
+// FindRole finds a role by name.
+func (c *Client) FindRole(ctx context.Context, name string) (*Role, error) {
+	u := c.urlFor(fmt.Sprintf("/role/%s", name))
+	q := u.Query()
 	q.Set("embed", "(permissions)")
-	url.RawQuery = q.Encode()
-	req, err := http.NewRequest("GET", url.String(), nil)
+	u.RawQuery = q.Encode()
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data *Role
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-
-}
-
-// ListRoles find the roles
-func (c *Client) ListRoles(param *RoleSearchParams) ([]*Role, error) {
-	req, err := http.NewRequest("GET", c.urlFor("/roles").String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.Request(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []*(Role)
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
-
-// CreateRole create an role
-func (c *Client) CreateRole(createRequest *RoleCreateRequest) (*Role, error) {
-	resp, err := c.PostJSON("/roles", createRequest)
-	defer closeResponse(resp)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var data Role
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
@@ -93,35 +54,71 @@ func (c *Client) CreateRole(createRequest *RoleCreateRequest) (*Role, error) {
 	return &data, nil
 }
 
-// UpdateRole update an role
-func (c *Client) UpdateRole(name string, updateRequest *RoleUpdateRequest) (*Role, error) {
-	resp, err := c.PutJSON(fmt.Sprintf("/role/%s", name), updateRequest)
+// ListRoles finds roles.
+func (c *Client) ListRoles(ctx context.Context, param *RoleSearchParams) ([]*Role, error) {
+	u := c.urlFor("/roles")
+	if param != nil {
+		setPagination(u, param.Offset, param.Limit)
+	}
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Request(ctx, req)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []*Role
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// CreateRole creates a role.
+func (c *Client) CreateRole(ctx context.Context, createRequest *RoleCreateRequest) (*Role, error) {
+	resp, err := c.PostJSON(ctx, "/roles", createRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
 	var data Role
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
-
 	return &data, nil
 }
 
-func (c *Client) DeleteRole(name string) error {
-	req, err := http.NewRequest(
-		"DELETE",
-		c.urlFor(fmt.Sprintf("/role/%s", name)).String(),
-		nil,
-	)
+// UpdateRole updates a role.
+func (c *Client) UpdateRole(ctx context.Context, name string, updateRequest *RoleUpdateRequest) (*Role, error) {
+	resp, err := c.PutJSON(ctx, fmt.Sprintf("/role/%s", name), updateRequest)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data Role
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// DeleteRole deletes a role.
+func (c *Client) DeleteRole(ctx context.Context, name string) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", c.urlFor(fmt.Sprintf("/role/%s", name)).String(), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err

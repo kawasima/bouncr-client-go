@@ -1,12 +1,13 @@
 package bouncr
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-// Application application information
+// Application represents application information.
 type Application struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -16,13 +17,13 @@ type Application struct {
 	TopPage     string `json:"top_page"`
 }
 
-// ApplicationSearchParams parameters for search applications
+// ApplicationSearchParams contains parameters for searching applications.
 type ApplicationSearchParams struct {
 	Offset int
 	Limit  int
 }
 
-// ApplicationCreateRequest request for creating an application
+// ApplicationCreateRequest is a request for creating an application.
 type ApplicationCreateRequest struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -31,67 +32,27 @@ type ApplicationCreateRequest struct {
 	TopPage     string `json:"top_page,omitempty"`
 }
 
-// ApplicationUpdateRequest request for creating an application
+// ApplicationUpdateRequest is a request for updating an application.
 type ApplicationUpdateRequest ApplicationCreateRequest
 
-// FindApplication find a application
-func (c *Client) FindApplication(name string) (*Application, error) {
-	url := c.urlFor(fmt.Sprintf("/application/%s", name))
-	q := url.Query()
+// FindApplication finds an application by name.
+func (c *Client) FindApplication(ctx context.Context, name string) (*Application, error) {
+	u := c.urlFor(fmt.Sprintf("/application/%s", name))
+	q := u.Query()
 	q.Set("embed", "(realms)")
-	url.RawQuery = q.Encode()
+	u.RawQuery = q.Encode()
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data *Application
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-
-}
-
-// ListApplications find the applications
-func (c *Client) ListApplications(param *ApplicationSearchParams) ([]*Application, error) {
-	req, err := http.NewRequest("GET", c.urlFor("/applications").String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.Request(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []*(Application)
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
-
-// CreateApplication create an application
-func (c *Client) CreateApplication(createRequest *ApplicationCreateRequest) (*Application, error) {
-	resp, err := c.PostJSON("/applications", createRequest)
-	defer closeResponse(resp)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var data Application
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
@@ -99,35 +60,71 @@ func (c *Client) CreateApplication(createRequest *ApplicationCreateRequest) (*Ap
 	return &data, nil
 }
 
-// UpdateApplication update an application
-func (c *Client) UpdateApplication(name string, updateRequest *ApplicationUpdateRequest) (*Application, error) {
-	resp, err := c.PutJSON(fmt.Sprintf("/application/%s", name), updateRequest)
+// ListApplications finds applications.
+func (c *Client) ListApplications(ctx context.Context, param *ApplicationSearchParams) ([]*Application, error) {
+	u := c.urlFor("/applications")
+	if param != nil {
+		setPagination(u, param.Offset, param.Limit)
+	}
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Request(ctx, req)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []*Application
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// CreateApplication creates an application.
+func (c *Client) CreateApplication(ctx context.Context, createRequest *ApplicationCreateRequest) (*Application, error) {
+	resp, err := c.PostJSON(ctx, "/applications", createRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
 	var data Application
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
-
 	return &data, nil
 }
 
-func (c *Client) DeleteApplication(name string) error {
-	req, err := http.NewRequest(
-		"DELETE",
-		c.urlFor(fmt.Sprintf("/application/%s", name)).String(),
-		nil,
-	)
+// UpdateApplication updates an application.
+func (c *Client) UpdateApplication(ctx context.Context, name string, updateRequest *ApplicationUpdateRequest) (*Application, error) {
+	resp, err := c.PutJSON(ctx, fmt.Sprintf("/application/%s", name), updateRequest)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data Application
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// DeleteApplication deletes an application.
+func (c *Client) DeleteApplication(ctx context.Context, name string) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", c.urlFor(fmt.Sprintf("/application/%s", name)).String(), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err

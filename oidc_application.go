@@ -1,92 +1,66 @@
 package bouncr
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-// OidcApplication oidcApplication information
+// OidcApplication represents OIDC application information.
 type OidcApplication struct {
-	ID          int      `json:"id"`
-	Name        string   `json:"name"`
-	HomeURL     string   `json:"home_url"`
-	CallbackURL string   `json:"callback_url"`
-	Description string   `json:"description"`
-	Permissions []string `json:"permissions"`
+	ID                    int          `json:"id"`
+	Name                  string       `json:"name"`
+	Description           string       `json:"description"`
+	ClientID              string       `json:"client_id,omitempty"`
+	HomeURI               string       `json:"home_uri,omitempty"`
+	CallbackURI           string       `json:"callback_uri,omitempty"`
+	BackchannelLogoutURI  string       `json:"backchannel_logout_uri,omitempty"`
+	FrontchannelLogoutURI string       `json:"frontchannel_logout_uri,omitempty"`
+	GrantTypes            []string     `json:"grant_types,omitempty"`
+	Permissions           []Permission `json:"permissions,omitempty"`
 }
 
-// OidcApplicationSearchParams parameters for search oidcApplications
+// OidcApplicationSearchParams contains parameters for searching OIDC applications.
 type OidcApplicationSearchParams struct {
 	Offset int
 	Limit  int
 }
 
-// OidcApplicationCreateRequest request for creating an oidcApplication
+// OidcApplicationCreateRequest is a request for creating an OIDC application.
 type OidcApplicationCreateRequest struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	HomeURL     string   `json:"home_url"`
-	CallbackURL string   `json:"callback_url"`
-	Permissions []string `json:"permissions,omitempty"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	HomeURI               string   `json:"home_uri,omitempty"`
+	CallbackURI           string   `json:"callback_uri,omitempty"`
+	BackchannelLogoutURI  string   `json:"backchannel_logout_uri,omitempty"`
+	FrontchannelLogoutURI string   `json:"frontchannel_logout_uri,omitempty"`
+	GrantTypes            []string `json:"grant_types,omitempty"`
+	Permissions           []string `json:"permissions,omitempty"`
 }
 
-// OidcApplicationUpdateRequest request for creating an oidcApplication
+// OidcApplicationUpdateRequest is a request for updating an OIDC application.
 type OidcApplicationUpdateRequest OidcApplicationCreateRequest
 
-// FindOidcApplication find a oidcApplication
-func (c *Client) FindOidcApplication(name string) (*OidcApplication, error) {
-	req, err := http.NewRequest("GET", c.urlFor(fmt.Sprintf("/oidc_application/%s", name)).String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.Request(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data *OidcApplication
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-
+// OidcApplicationSecret represents a client_id and client_secret pair.
+type OidcApplicationSecret struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
 }
 
-// ListOidcApplications find the oidcApplications
-func (c *Client) ListOidcApplications(param *OidcApplicationSearchParams) ([]*OidcApplication, error) {
-	req, err := http.NewRequest("GET", c.urlFor("/oidc_applications").String(), nil)
+// FindOidcApplication finds an OIDC application by name.
+func (c *Client) FindOidcApplication(ctx context.Context, name string) (*OidcApplication, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", c.urlFor(fmt.Sprintf("/oidc_application/%s", name)).String(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []*(OidcApplication)
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, err
-}
-
-// CreateOidcApplication create an oidcApplication
-func (c *Client) CreateOidcApplication(createRequest *OidcApplicationCreateRequest) (*OidcApplication, error) {
-	resp, err := c.PostJSON("/oidc_applications", createRequest)
-	defer closeResponse(resp)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var data OidcApplication
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
@@ -94,38 +68,90 @@ func (c *Client) CreateOidcApplication(createRequest *OidcApplicationCreateReque
 	return &data, nil
 }
 
-// UpdateOidcApplication update an oidcApplication
-func (c *Client) UpdateOidcApplication(name string, updateRequest *OidcApplicationUpdateRequest) (*OidcApplication, error) {
-	resp, err := c.PutJSON(fmt.Sprintf("/oidc_application/%s", name), updateRequest)
+// ListOidcApplications finds OIDC applications.
+func (c *Client) ListOidcApplications(ctx context.Context, param *OidcApplicationSearchParams) ([]*OidcApplication, error) {
+	u := c.urlFor("/oidc_applications")
+	if param != nil {
+		setPagination(u, param.Offset, param.Limit)
+	}
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Request(ctx, req)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []*OidcApplication
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// CreateOidcApplication creates an OIDC application.
+func (c *Client) CreateOidcApplication(ctx context.Context, createRequest *OidcApplicationCreateRequest) (*OidcApplication, error) {
+	resp, err := c.PostJSON(ctx, "/oidc_applications", createRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
 	}
 
 	var data OidcApplication
-
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return nil, err
 	}
-
 	return &data, nil
 }
 
-func (c *Client) DeleteOidcApplication(name string) error {
-	req, err := http.NewRequest(
-		"DELETE",
-		c.urlFor(fmt.Sprintf("/oidc_application/%s", name)).String(),
-		nil,
-	)
+// UpdateOidcApplication updates an OIDC application.
+func (c *Client) UpdateOidcApplication(ctx context.Context, name string, updateRequest *OidcApplicationUpdateRequest) (*OidcApplication, error) {
+	resp, err := c.PutJSON(ctx, fmt.Sprintf("/oidc_application/%s", name), updateRequest)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data OidcApplication
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// DeleteOidcApplication deletes an OIDC application.
+func (c *Client) DeleteOidcApplication(ctx context.Context, name string) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", c.urlFor(fmt.Sprintf("/oidc_application/%s", name)).String(), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// RegenerateOidcApplicationSecret regenerates the client secret for an OIDC application.
+func (c *Client) RegenerateOidcApplicationSecret(ctx context.Context, name string) (*OidcApplicationSecret, error) {
+	resp, err := c.PostJSON(ctx, fmt.Sprintf("/oidc_application/%s/secret", name), nil)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data OidcApplicationSecret
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
 }

@@ -2,42 +2,65 @@ package bouncr
 
 import (
 	"bytes"
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	defaultBaseURL  = "http://localhost:3000"
 	defaultBasePath = "/bouncr/api"
+	oauth2Path      = "/oauth2"
 )
 
-// Client api client for bouncr
+// Client is an API client for bouncr.
 type Client struct {
 	BaseURL           *url.URL
-	Account           string
-	Password          string
+	TokenURL          *url.URL
+	ClientID          string
+	ClientSecret      string
 	Token             string
+	TokenExpiry       time.Time
 	Verbose           bool
 	AdditionalHeaders http.Header
+	httpClient        *http.Client
 }
 
-// NewClient returns new mackerel.Client
-func NewClient(account string, password string) *Client {
+// NewClient returns a new Client with default settings.
+func NewClient(clientID, clientSecret string) *Client {
 	u, _ := url.Parse(defaultBaseURL)
-	return &Client{u, account, password, "", true, http.Header{}}
+	return &Client{
+		BaseURL:           u,
+		ClientID:          clientID,
+		ClientSecret:      clientSecret,
+		Verbose:           true,
+		AdditionalHeaders: http.Header{},
+		httpClient:        &http.Client{},
+	}
 }
 
-func NewClientWithOptions(account string, password string, rawurl string, verbose bool) (*Client, error) {
+// NewClientWithOptions returns a new Client with the given options.
+func NewClientWithOptions(clientID, clientSecret, rawurl string, verbose bool) (*Client, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{u, account, password, "", verbose, http.Header{}}, nil
+	return &Client{
+		BaseURL:           u,
+		ClientID:          clientID,
+		ClientSecret:      clientSecret,
+		Verbose:           verbose,
+		AdditionalHeaders: http.Header{},
+		httpClient:        &http.Client{},
+	}, nil
 }
 
 func (c *Client) buildReq(req *http.Request) *http.Request {
@@ -66,17 +89,84 @@ func (c *Client) urlFor(path string) *url.URL {
 	return newURL
 }
 
-// Request request to mackerel and receive response
-func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
-	if !strings.HasSuffix(req.URL.Path, "/sign_in") && c.Token == "" {
-		signInResponse, err := c.SignIn(&SignInRequest{
-			Account:  c.Account,
-			Password: c.Password,
-		})
-		if err != nil {
-			return nil, err
+func (c *Client) urlForOAuth2(path string) *url.URL {
+	newURL, err := url.Parse(c.BaseURL.String())
+	if err != nil {
+		panic("invalid url passed")
+	}
+
+	newURL.Path = oauth2Path + path
+
+	return newURL
+}
+
+type tokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+	Scope       string `json:"scope"`
+}
+
+func (c *Client) ensureToken(ctx context.Context) error {
+	if c.Token != "" && time.Now().Before(c.TokenExpiry.Add(-10*time.Second)) {
+		return nil
+	}
+
+	form := url.Values{}
+	form.Set("grant_type", "client_credentials")
+
+	tokenURL := c.urlForOAuth2("/token").String()
+	if c.TokenURL != nil {
+		tokenURL = c.TokenURL.String()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", tokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.ClientID+":"+c.ClientSecret)))
+
+	if c.Verbose {
+		dump, err := httputil.DumpRequest(req, true)
+		if err == nil {
+			log.Printf("%s\n", dump)
 		}
-		c.Token = signInResponse.Token
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if c.Verbose {
+		dump, err := httputil.DumpResponse(resp, true)
+		if err == nil {
+			log.Printf("%s\n", dump)
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("token request failed: %s", resp.Status)
+	}
+
+	var tokenResp tokenResponse
+	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
+	if err != nil {
+		return err
+	}
+
+	c.Token = tokenResp.AccessToken
+	c.TokenExpiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+
+	return nil
+}
+
+// Request sends a request to the bouncr API.
+func (c *Client) Request(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
+	if err := c.ensureToken(ctx); err != nil {
+		return nil, err
 	}
 	req = c.buildReq(req)
 
@@ -86,8 +176,7 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 			log.Printf("%s\n", dump)
 		}
 	}
-	client := &http.Client{}
-	resp, err = client.Do(req)
+	resp, err = c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -103,29 +192,41 @@ func (c *Client) Request(req *http.Request) (resp *http.Response, err error) {
 	return resp, nil
 }
 
-// PostJSON shortcut method for posting json
-func (c *Client) PostJSON(path string, payload interface{}) (*http.Response, error) {
-	return c.requestJSON("POST", path, payload)
+// PostJSON is a shortcut method for posting json.
+func (c *Client) PostJSON(ctx context.Context, path string, payload any) (*http.Response, error) {
+	return c.requestJSON(ctx, "POST", path, payload)
 }
 
-// PutJSON shortcut method for putting json
-func (c *Client) PutJSON(path string, payload interface{}) (*http.Response, error) {
-	return c.requestJSON("PUT", path, payload)
+// PutJSON is a shortcut method for putting json.
+func (c *Client) PutJSON(ctx context.Context, path string, payload any) (*http.Response, error) {
+	return c.requestJSON(ctx, "PUT", path, payload)
 }
 
-func (c *Client) requestJSON(method string, path string, payload interface{}) (*http.Response, error) {
+func (c *Client) requestJSON(ctx context.Context, method, path string, payload any) (*http.Response, error) {
 	var body bytes.Buffer
 	err := json.NewEncoder(&body).Encode(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, c.urlFor(path).String(), &body)
+	req, err := http.NewRequestWithContext(ctx, method, c.urlFor(path).String(), &body)
 	if err != nil {
 		return nil, err
 	}
-	return c.Request(req)
+	return c.Request(ctx, req)
 }
+
+func setPagination(u *url.URL, offset, limit int) {
+	q := u.Query()
+	if offset > 0 {
+		q.Set("offset", strconv.Itoa(offset))
+	}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	u.RawQuery = q.Encode()
+}
+
 func closeResponse(resp *http.Response) {
 	if resp != nil {
 		resp.Body.Close()

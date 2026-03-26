@@ -1,27 +1,11 @@
-test: lint gofmt
+.PHONY: test lint fmt
+
+test: lint fmt
 	go test -v ./...
 
-testdeps:
-	go get -d -v -t ./...
-	go get golang.org/x/lint/golint \
-		golang.org/x/tools/cmd/cover \
-		github.com/axw/gocov/gocov \
-		github.com/mattn/goveralls
+lint:
+	go vet ./...
+	staticcheck ./...
 
-LINT_RET = .golint.txt
-lint: testdeps
-	go vet .
-	rm -f $(LINT_RET)
-	golint ./... | tee $(LINT_RET)
-	test ! -s $(LINT_RET)
-
-GOFMT_RET = .gofmt.txt
-gofmt: testdeps
-	rm -f $(GOFMT_RET)
-	gofmt -w -e *.go | tee $(GOFMT_RET)
-	test ! -s $(GOFMT_RET)
-
-cover: testdeps
-	goveralls
-
-.PHONY: test testdeps lint gofmt cover
+fmt:
+	gofmt -l -w .

@@ -1,51 +1,34 @@
 package bouncr
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 )
 
+// PasswordCredential represents a password credential.
 type PasswordCredential struct {
 	User      User      `json:"user"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// PasswordCredentialCreateRequest request for creating an password credential
+// PasswordCredentialCreateRequest is a request for creating a password credential.
 type PasswordCredentialCreateRequest struct {
 	Account  string `json:"account"`
 	Password string `json:"password"`
 	Initial  bool   `json:"initial"`
 }
 
-// PasswordCredentialUpdateRequest request for updating an password credential
+// PasswordCredentialUpdateRequest is a request for updating a password credential.
 type PasswordCredentialUpdateRequest struct {
-	Account     string `json:"account"`
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
 
-// CreatePasswordCredential create an password credential
-func (c *Client) CreatePasswordCredential(createRequest *PasswordCredentialCreateRequest) (*PasswordCredential, error) {
-	resp, err := c.PostJSON("/password_credential", createRequest)
-	defer closeResponse(resp)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var data PasswordCredential
-
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
-}
-
-// UpdatePasswordCredential update an password credential
-func (c *Client) UpdatePasswordCredential(updateRequest *PasswordCredentialUpdateRequest) (*PasswordCredential, error) {
-	resp, err := c.PutJSON("/password_credential", updateRequest)
+// CreatePasswordCredential creates a password credential.
+func (c *Client) CreatePasswordCredential(ctx context.Context, createRequest *PasswordCredentialCreateRequest) (*PasswordCredential, error) {
+	resp, err := c.PostJSON(ctx, "/password_credential", createRequest)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
@@ -56,22 +39,33 @@ func (c *Client) UpdatePasswordCredential(updateRequest *PasswordCredentialUpdat
 	if err != nil {
 		return nil, err
 	}
-
 	return &data, nil
 }
 
-// DeletePasswordCredential delete an password credential
-func (c *Client) DeletePasswordCredential() error {
-	req, err := http.NewRequest(
-		"DELETE",
-		c.urlFor("/password_credential").String(),
-		nil,
-	)
+// UpdatePasswordCredential updates a password credential.
+func (c *Client) UpdatePasswordCredential(ctx context.Context, updateRequest *PasswordCredentialUpdateRequest) (*PasswordCredential, error) {
+	resp, err := c.PutJSON(ctx, "/password_credential", updateRequest)
+	defer closeResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	var data PasswordCredential
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+// DeletePasswordCredential deletes a password credential.
+func (c *Client) DeletePasswordCredential(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, "DELETE", c.urlFor("/password_credential").String(), nil)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.Request(req)
+	resp, err := c.Request(ctx, req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
