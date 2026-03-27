@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -18,13 +19,7 @@ func (c *Client) FindUsersInGroup(ctx context.Context, name string) (*Group, err
 	if err != nil {
 		return nil, err
 	}
-
-	var data Group
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Group](resp)
 }
 
 // AddUsersToGroup adds users to a group.
@@ -35,9 +30,15 @@ func (c *Client) AddUsersToGroup(ctx context.Context, group string, createReques
 		return nil, err
 	}
 
-	var data []string
-	err = json.NewDecoder(resp.Body).Decode(&data)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return nil, err
+	}
+	if len(body) == 0 {
+		return createRequest, nil
+	}
+	var data []string
+	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
 	return &data, nil

@@ -201,6 +201,36 @@ func TestSetPagination(t *testing.T) {
 	}
 }
 
+func TestDecodeJSONEmptyBody(t *testing.T) {
+	ts, client := newTestServer(t, func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+	})
+	defer ts.Close()
+
+	app, err := client.CreateApplication(context.Background(), &ApplicationCreateRequest{Name: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app == nil {
+		t.Error("expected non-nil result for empty body")
+	}
+}
+
+func TestDecodeJSONSliceEmptyBody(t *testing.T) {
+	ts, client := newTestServer(t, func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+	})
+	defer ts.Close()
+
+	apps, err := client.ListApplications(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if apps != nil {
+		t.Errorf("expected nil slice for empty body, got %v", apps)
+	}
+}
+
 func TestSetPaginationZeroValues(t *testing.T) {
 	cl := NewClient("id", "secret")
 	u := cl.urlFor("/test")

@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 )
 
@@ -45,13 +44,7 @@ func (c *Client) FindAssignment(ctx context.Context, findRequest *AssignmentRequ
 	if err != nil {
 		return nil, err
 	}
-
-	var data Assignment
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Assignment](resp)
 }
 
 // CreateAssignments creates assignments.

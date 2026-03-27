@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -45,13 +44,7 @@ func (c *Client) FindGroup(ctx context.Context, name string) (*Group, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var data Group
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Group](resp)
 }
 
 // ListGroups finds groups.
@@ -70,13 +63,7 @@ func (c *Client) ListGroups(ctx context.Context, param *GroupSearchParams) ([]*G
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*Group
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[Group](resp)
 }
 
 // CreateGroup creates a group.
@@ -86,13 +73,7 @@ func (c *Client) CreateGroup(ctx context.Context, createRequest *GroupCreateRequ
 	if err != nil {
 		return nil, err
 	}
-
-	var data Group
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Group](resp)
 }
 
 // UpdateGroup updates a group.
@@ -102,13 +83,7 @@ func (c *Client) UpdateGroup(ctx context.Context, name string, updateRequest *Gr
 	if err != nil {
 		return nil, err
 	}
-
-	var data Group
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Group](resp)
 }
 
 // DeleteGroup deletes a group.

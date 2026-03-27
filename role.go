@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -45,13 +44,7 @@ func (c *Client) FindRole(ctx context.Context, name string) (*Role, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	var data Role
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Role](resp)
 }
 
 // ListRoles finds roles.
@@ -70,13 +63,7 @@ func (c *Client) ListRoles(ctx context.Context, param *RoleSearchParams) ([]*Rol
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*Role
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[Role](resp)
 }
 
 // CreateRole creates a role.
@@ -86,13 +73,7 @@ func (c *Client) CreateRole(ctx context.Context, createRequest *RoleCreateReques
 	if err != nil {
 		return nil, err
 	}
-
-	var data Role
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Role](resp)
 }
 
 // UpdateRole updates a role.
@@ -102,13 +83,7 @@ func (c *Client) UpdateRole(ctx context.Context, name string, updateRequest *Rol
 	if err != nil {
 		return nil, err
 	}
-
-	var data Role
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Role](resp)
 }
 
 // DeleteRole deletes a role.

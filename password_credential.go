@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -33,13 +32,7 @@ func (c *Client) CreatePasswordCredential(ctx context.Context, createRequest *Pa
 	if err != nil {
 		return nil, err
 	}
-
-	var data PasswordCredential
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[PasswordCredential](resp)
 }
 
 // UpdatePasswordCredential updates a password credential.
@@ -49,13 +42,7 @@ func (c *Client) UpdatePasswordCredential(ctx context.Context, updateRequest *Pa
 	if err != nil {
 		return nil, err
 	}
-
-	var data PasswordCredential
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[PasswordCredential](resp)
 }
 
 // DeletePasswordCredential deletes a password credential.

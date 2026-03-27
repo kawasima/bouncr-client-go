@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -51,13 +50,7 @@ func (c *Client) FindApplication(ctx context.Context, name string) (*Application
 	if err != nil {
 		return nil, err
 	}
-
-	var data Application
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Application](resp)
 }
 
 // ListApplications finds applications.
@@ -76,13 +69,7 @@ func (c *Client) ListApplications(ctx context.Context, param *ApplicationSearchP
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*Application
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[Application](resp)
 }
 
 // CreateApplication creates an application.
@@ -92,13 +79,7 @@ func (c *Client) CreateApplication(ctx context.Context, createRequest *Applicati
 	if err != nil {
 		return nil, err
 	}
-
-	var data Application
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Application](resp)
 }
 
 // UpdateApplication updates an application.
@@ -108,13 +89,7 @@ func (c *Client) UpdateApplication(ctx context.Context, name string, updateReque
 	if err != nil {
 		return nil, err
 	}
-
-	var data Application
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Application](resp)
 }
 
 // DeleteApplication deletes an application.

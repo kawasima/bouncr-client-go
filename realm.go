@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -42,13 +41,7 @@ func (c *Client) FindRealm(ctx context.Context, applicationName, name string) (*
 	if err != nil {
 		return nil, err
 	}
-
-	var data Realm
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Realm](resp)
 }
 
 // ListRealms finds realms within an application.
@@ -67,13 +60,7 @@ func (c *Client) ListRealms(ctx context.Context, applicationName string, param *
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*Realm
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[Realm](resp)
 }
 
 // CreateRealm creates a realm within an application.
@@ -83,13 +70,7 @@ func (c *Client) CreateRealm(ctx context.Context, applicationName string, create
 	if err != nil {
 		return nil, err
 	}
-
-	var data Realm
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Realm](resp)
 }
 
 // UpdateRealm updates a realm within an application.
@@ -99,13 +80,7 @@ func (c *Client) UpdateRealm(ctx context.Context, applicationName, name string, 
 	if err != nil {
 		return nil, err
 	}
-
-	var data Realm
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Realm](resp)
 }
 
 // DeleteRealm deletes a realm within an application.

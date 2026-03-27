@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -42,9 +43,15 @@ func (c *Client) FindUser(ctx context.Context, account string) (*User, error) {
 		return nil, err
 	}
 
-	var data map[string]any
-	err = json.NewDecoder(resp.Body).Decode(&data)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		return nil, err
+	}
+	if len(body) == 0 {
+		return &User{}, nil
+	}
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
 	user := &User{
@@ -85,13 +92,7 @@ func (c *Client) ListUsers(ctx context.Context, param *UserSearchParams) ([]*Use
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*User
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[User](resp)
 }
 
 // CreateUser creates a user.
@@ -101,13 +102,7 @@ func (c *Client) CreateUser(ctx context.Context, createRequest *UserCreateReques
 	if err != nil {
 		return nil, err
 	}
-
-	var data User
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[User](resp)
 }
 
 // UpdateUser updates a user.
@@ -118,13 +113,7 @@ func (c *Client) UpdateUser(ctx context.Context, account string, updateRequest *
 	if err != nil {
 		return nil, err
 	}
-
-	var data User
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[User](resp)
 }
 
 // DeleteUser deletes a user.

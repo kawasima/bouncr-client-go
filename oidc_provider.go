@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -60,13 +59,7 @@ func (c *Client) FindOidcProvider(ctx context.Context, name string) (*OidcProvid
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcProvider
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcProvider](resp)
 }
 
 // ListOidcProviders finds OIDC providers.
@@ -85,13 +78,7 @@ func (c *Client) ListOidcProviders(ctx context.Context, param *OidcProviderSearc
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*OidcProvider
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[OidcProvider](resp)
 }
 
 // CreateOidcProvider creates an OIDC provider.
@@ -101,13 +88,7 @@ func (c *Client) CreateOidcProvider(ctx context.Context, createRequest *OidcProv
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcProvider
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcProvider](resp)
 }
 
 // UpdateOidcProvider updates an OIDC provider.
@@ -117,13 +98,7 @@ func (c *Client) UpdateOidcProvider(ctx context.Context, name string, updateRequ
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcProvider
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcProvider](resp)
 }
 
 // DeleteOidcProvider deletes an OIDC provider.

@@ -230,6 +230,36 @@ func setPagination(u *url.URL, offset, limit int) {
 	u.RawQuery = q.Encode()
 }
 
+func decodeJSON[T any](resp *http.Response) (*T, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var data T
+	if len(body) == 0 {
+		return &data, nil
+	}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+
+func decodeJSONSlice[T any](resp *http.Response) ([]*T, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if len(body) == 0 {
+		return nil, nil
+	}
+	var data []*T
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 func closeResponse(resp *http.Response) {
 	if resp != nil {
 		resp.Body.Close()

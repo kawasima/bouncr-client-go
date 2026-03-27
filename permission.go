@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -40,13 +39,7 @@ func (c *Client) FindPermission(ctx context.Context, name string) (*Permission, 
 	if err != nil {
 		return nil, err
 	}
-
-	var data Permission
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Permission](resp)
 }
 
 // ListPermissions finds permissions.
@@ -65,13 +58,7 @@ func (c *Client) ListPermissions(ctx context.Context, param *PermissionSearchPar
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*Permission
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[Permission](resp)
 }
 
 // CreatePermission creates a permission.
@@ -81,13 +68,7 @@ func (c *Client) CreatePermission(ctx context.Context, createRequest *Permission
 	if err != nil {
 		return nil, err
 	}
-
-	var data Permission
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Permission](resp)
 }
 
 // UpdatePermission updates a permission.
@@ -97,13 +78,7 @@ func (c *Client) UpdatePermission(ctx context.Context, name string, updateReques
 	if err != nil {
 		return nil, err
 	}
-
-	var data Permission
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[Permission](resp)
 }
 
 // DeletePermission deletes a permission.

@@ -2,7 +2,6 @@ package bouncr
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -59,13 +58,7 @@ func (c *Client) FindOidcApplication(ctx context.Context, name string) (*OidcApp
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcApplication
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcApplication](resp)
 }
 
 // ListOidcApplications finds OIDC applications.
@@ -84,13 +77,7 @@ func (c *Client) ListOidcApplications(ctx context.Context, param *OidcApplicatio
 	if err != nil {
 		return nil, err
 	}
-
-	var data []*OidcApplication
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+	return decodeJSONSlice[OidcApplication](resp)
 }
 
 // CreateOidcApplication creates an OIDC application.
@@ -100,13 +87,7 @@ func (c *Client) CreateOidcApplication(ctx context.Context, createRequest *OidcA
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcApplication
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcApplication](resp)
 }
 
 // UpdateOidcApplication updates an OIDC application.
@@ -116,13 +97,7 @@ func (c *Client) UpdateOidcApplication(ctx context.Context, name string, updateR
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcApplication
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcApplication](resp)
 }
 
 // DeleteOidcApplication deletes an OIDC application.
@@ -147,11 +122,5 @@ func (c *Client) RegenerateOidcApplicationSecret(ctx context.Context, name strin
 	if err != nil {
 		return nil, err
 	}
-
-	var data OidcApplicationSecret
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	if err != nil {
-		return nil, err
-	}
-	return &data, nil
+	return decodeJSON[OidcApplicationSecret](resp)
 }
