@@ -6,12 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +33,7 @@ type Client struct {
 	Verbose           bool
 	AdditionalHeaders http.Header
 	httpClient        *http.Client
+	mu                sync.Mutex
 }
 
 // NewClient returns a new Client with default settings.
@@ -108,6 +110,9 @@ type tokenResponse struct {
 }
 
 func (c *Client) ensureToken(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.Token != "" && time.Now().Before(c.TokenExpiry.Add(-10*time.Second)) {
 		return nil
 	}
@@ -128,10 +133,7 @@ func (c *Client) ensureToken(ctx context.Context) error {
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.ClientID+":"+c.ClientSecret)))
 
 	if c.Verbose {
-		dump, err := httputil.DumpRequest(req, true)
-		if err == nil {
-			log.Printf("%s\n", dump)
-		}
+		log.Printf("Token Request: %s %s\n", req.Method, req.URL)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -140,19 +142,21 @@ func (c *Client) ensureToken(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
 	if c.Verbose {
-		dump, err := httputil.DumpResponse(resp, true)
-		if err == nil {
-			log.Printf("%s\n", dump)
-		}
+		log.Printf("Response: %s %s\n", resp.Status, string(body))
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("token request failed: %s", resp.Status)
+		return fmt.Errorf("token request failed: %s: %s", resp.Status, string(body))
 	}
 
 	var tokenResp tokenResponse
-	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
+	err = json.Unmarshal(body, &tokenResp)
 	if err != nil {
 		return err
 	}
@@ -171,23 +175,22 @@ func (c *Client) Request(ctx context.Context, req *http.Request) (resp *http.Res
 	req = c.buildReq(req)
 
 	if c.Verbose {
-		dump, err := httputil.DumpRequest(req, true)
-		if err == nil {
-			log.Printf("%s\n", dump)
-		}
+		log.Printf("Request: %s %s\n", req.Method, req.URL)
 	}
 	resp, err = c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if c.Verbose {
-		dump, err := httputil.DumpResponse(resp, true)
-		if err == nil {
-			log.Printf("%s\n", dump)
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr == nil {
+			log.Printf("Response: %s %s\n", resp.Status, string(body))
+			resp.Body = io.NopCloser(bytes.NewReader(body))
 		}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return resp, fmt.Errorf("API result failed: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return resp, fmt.Errorf("API result failed: %s: %s", resp.Status, string(body))
 	}
 	return resp, nil
 }
